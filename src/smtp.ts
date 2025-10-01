@@ -3,6 +3,7 @@ import { logger } from './logger';
 import { extractPidFromEmail, getAccountInfoFromPid } from './utils';
 import { getTransporter } from './smtp-connection';
 import { config } from './config';
+import { relayedMessagesTotal } from './metrics';
 import type { SMTPServerSession } from 'smtp-server';
 
 type SmtpMessage = {
@@ -32,6 +33,7 @@ async function handleMessage(msg: SmtpMessage) {
 		raw: msg.rawMessage
 	});
 	logger.info(`Relayed email to ${email}`);
+	relayedMessagesTotal.inc();
 }
 
 export function makeSmtpServer() {
