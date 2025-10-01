@@ -2,6 +2,7 @@ import express from 'express';
 import { config } from './config';
 import { logger } from './logger';
 import { makeSmtpServer } from './smtp';
+import { initSmtpConnection } from './smtp-connection';
 
 async function main(): Promise<void> {
 	logger.info('Starting server');
@@ -13,6 +14,10 @@ async function main(): Promise<void> {
 		});
 	}
 
+	initSmtpConnection();
+	logger.info('Connected to external SMTP server');
+
+	logger.info('Starting SMTP server');
 	const smtp = makeSmtpServer();
 	smtp.listen(config.server.port, () => {
 		logger.info(`SMTP server running on port ${config.server.port}`);

@@ -7,6 +7,18 @@ const schema = z.object({
 	server: z.object({
 		port: z.coerce.number().default(2525)
 	}).default({}),
+	smtp: z.object({
+		host: z.string(),
+		port: z.coerce.number(),
+		secure: zodCoercedBoolean().default(false),
+		username: z.string().optional(),
+		password: z.string().optional()
+	}),
+	accountGrpc: z.object({
+		host: z.string(),
+		port: z.coerce.number(),
+		apiKey: z.string()
+	}),
 	log: z.object({
 		format: z.enum(['json', 'pretty']).default('pretty'),
 		level: z.enum(['error', 'warn', 'info', 'debug', 'trace']).default('info')
