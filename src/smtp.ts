@@ -27,10 +27,17 @@ async function handleMessage(msg: SmtpMessage) {
 		throw new Error('No from header set');
 	}
 
+	const rawMessageWithCorrectToHeader = msg.rawMessage.replace(
+		/^To:.*$/m,
+		`To: ${user.emailAddress}`
+	);
+
 	await getTransporter().sendMail({
-		from: msg.session.envelope.mailFrom.address,
-		to: [user.emailAddress],
-		raw: msg.rawMessage
+		envelope: {
+			from: msg.session.envelope.mailFrom.address,
+			to: [user.emailAddress]
+		},
+		raw: rawMessageWithCorrectToHeader
 	});
 	logger.info(`Relayed email to ${email}`);
 	relayedMessagesTotal.inc();
