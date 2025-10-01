@@ -35,8 +35,8 @@ export function extractPidFromEmail(email: string): number | null {
 	return parseInt(match[1]);
 }
 
-export async function getAccountInfoFromPid(pid: number): Promise<GetUserDataResponse> {
+export async function getAccountInfoFromPid(pid: number): Promise<GetUserDataResponse | null> {
 	return gRPCAccountClient.getUserData({
 		pid
-	});
+	}).catch(() => null);
 }

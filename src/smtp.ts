@@ -38,6 +38,7 @@ async function handleMessage(msg: SmtpMessage) {
 
 export function makeSmtpServer() {
 	return new SMTPServer({
+		hideSTARTTLS: true,
 		onAuth(auth, _session, cb) {
 			if (auth.username !== config.server.username || auth.password !== config.server.password) {
 				return cb(new Error('Invalid username or password'));
