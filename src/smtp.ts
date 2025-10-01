@@ -2,6 +2,7 @@ import { SMTPServer } from 'smtp-server';
 import { logger } from './logger';
 import { extractPidFromEmail, getAccountInfoFromPid } from './utils';
 import { getTransporter } from './smtp-connection';
+import { config } from './config';
 import type { SMTPServerSession } from 'smtp-server';
 
 type SmtpMessage = {
@@ -35,7 +36,12 @@ async function handleMessage(msg: SmtpMessage) {
 
 export function makeSmtpServer() {
 	return new SMTPServer({
-		authOptional: true, // no auth for incoming relay
+		onAuth(auth, _session, cb) {
+			if (auth.username !== config.server.username || auth.password !== config.server.password) {
+				return cb(new Error('Invalid username or password'));
+			}
+			cb(null, { user: auth.username });
+		},
 		onData(stream, session, callback) {
 			let rawMessage = '';
 

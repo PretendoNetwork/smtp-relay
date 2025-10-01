@@ -5,8 +5,10 @@ import type { AnyZodObject } from 'zod';
 
 const schema = z.object({
 	server: z.object({
-		port: z.coerce.number().default(2525)
-	}).default({}),
+		port: z.coerce.number().default(2525),
+		username: z.string(),
+		password: z.string()
+	}),
 	smtp: z.object({
 		host: z.string(),
 		port: z.coerce.number(),
