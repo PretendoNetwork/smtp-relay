@@ -12,22 +12,15 @@ const gRPCAccountClient = createClient(AccountDefinition, gRPCAccountChannel, {
 	}
 });
 
-function extractPidFromInvalidEmail(email: string): number | null {
-	const match = email.match(/^(\d+)@invalid\.com$/);
-	if (!match) {
-		return null;
+export function isExtractableEmail(email: string): boolean {
+	if (email.endsWith('@invalid.com')) {
+		return true;
 	}
-
-	return parseInt(match[1]);
+	return false;
 }
 
 export function extractPidFromEmail(email: string): number | null {
-	const invalidEmailPid = extractPidFromInvalidEmail(email);
-	if (invalidEmailPid) {
-		return invalidEmailPid;
-	}
-
-	const match = email.match(/^(\d+)@pretendo\.network$/);
+	const match = email.match(/^(\d+)@invalid\.com$/);
 	if (!match) {
 		return null;
 	}
