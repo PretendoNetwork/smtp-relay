@@ -33,9 +33,6 @@ async function relayMessage(originalTo: string | null, from: string, to: string,
 }
 
 async function handleMessage(msg: SmtpMessage) {
-	const [headers] = msg.rawMessage.split('\r\n\r\n', 1);
-	logger.debug(`Handling message:\n${headers}`);
-
 	const from = msg.session.envelope.mailFrom;
 	const to = msg.session.envelope.rcptTo[0];
 
@@ -93,6 +90,8 @@ export function makeSmtpServer() {
 					return;
 				} catch (err: any) {
 					logger.error(err, 'Failed to relay message');
+					const [headers] = rawMessage.split('\r\n\r\n', 1);
+					logger.debug(`Headers of failed message:\n${headers}`);
 					callback(err);
 					return;
 				}
