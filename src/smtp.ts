@@ -1,6 +1,6 @@
 import { SMTPServer } from 'smtp-server';
 import { logger } from './logger';
-import { extractPidFromEmail, getAccountInfoFromPid } from './utils';
+import { extractPidFromEmail, getAccountInfoFromPid, isExtractableEmail } from './utils';
 import { getTransporter } from './smtp-connection';
 import { config } from './config';
 import { relayedMessagesTotal } from './metrics';
@@ -11,11 +11,49 @@ type SmtpMessage = {
 	session: SMTPServerSession;
 };
 
+async function relayMessage(originalTo: string | null, from: string, to: string, raw: string): Promise<void> {
+	const rawMessageWithCorrectToHeader = raw.replace(
+		/^To:.*$/m,
+		`To: ${to}`
+	);
+
+	await getTransporter().sendMail({
+		envelope: {
+			from,
+			to: [to]
+		},
+		raw: rawMessageWithCorrectToHeader
+	});
+	if (originalTo) {
+		logger.info(`Relayed email to ${originalTo}`);
+	} else {
+		logger.info(`Sent raw email to ${to}`);
+	}
+	relayedMessagesTotal.inc();
+}
+
 async function handleMessage(msg: SmtpMessage) {
-	const email = msg.session.envelope.rcptTo[0].address;
-	const pid = extractPidFromEmail(email);
+	const from = msg.session.envelope.mailFrom;
+	const to = msg.session.envelope.rcptTo[0];
+
+	if (msg.session.envelope.rcptTo.length > 1) {
+		throw new Error('Cannot send message with multiple To addresses');
+	}
+	if (!to) {
+		throw new Error('Message contains no To address');
+	}
+	if (!from) {
+		throw new Error('Message contains no From address');
+	}
+
+	// Forward email without changes
+	if (!isExtractableEmail(to.address)) {
+		return await relayMessage(null, from.address, to.address, msg.rawMessage);
+	}
+
+	const pid = extractPidFromEmail(to.address);
 	if (!pid) {
-		throw new Error(`Could not extract PID from ${email}`);
+		throw new Error(`Could not extract PID from ${to.address}`);
 	}
 
 	const user = await getAccountInfoFromPid(pid);
@@ -23,24 +61,7 @@ async function handleMessage(msg: SmtpMessage) {
 		throw new Error(`Could not find account data for ${pid}`);
 	}
 
-	if (!msg.session.envelope.mailFrom) {
-		throw new Error('No from header set');
-	}
-
-	const rawMessageWithCorrectToHeader = msg.rawMessage.replace(
-		/^To:.*$/m,
-		`To: ${user.emailAddress}`
-	);
-
-	await getTransporter().sendMail({
-		envelope: {
-			from: msg.session.envelope.mailFrom.address,
-			to: [user.emailAddress]
-		},
-		raw: rawMessageWithCorrectToHeader
-	});
-	logger.info(`Relayed email to ${email}`);
-	relayedMessagesTotal.inc();
+	await relayMessage(to.address, from.address, user.emailAddress, msg.rawMessage);
 }
 
 export function makeSmtpServer() {
@@ -68,7 +89,9 @@ export function makeSmtpServer() {
 					callback();
 					return;
 				} catch (err: any) {
-					logger.error(err);
+					logger.error(err, 'Failed to relay message');
+					const [headers] = rawMessage.split('\r\n\r\n', 1);
+					logger.debug(`Headers of failed message:\n${headers}`);
 					callback(err);
 					return;
 				}
