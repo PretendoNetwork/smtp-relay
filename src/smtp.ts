@@ -61,6 +61,11 @@ async function handleMessage(msg: SmtpMessage) {
 		throw new Error(`Could not find account data for ${pid}`);
 	}
 
+	if (user.deleted) {
+		logger.warn(`Ignoring email sent to deleted user (${pid})`);
+		return;
+	}
+
 	await relayMessage(to.address, from.address, user.emailAddress, msg.rawMessage);
 }
 
