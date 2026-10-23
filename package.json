@@ -5,6 +5,9 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "exports": null,
+  "engines": {
+    "node": "^22.23.4"
+  },
   "scripts": {
     "dev": "tsup --watch --onSuccess \"node --enable-source-maps dist/server.js\"",
     "lint": "eslint .",
